@@ -1,6 +1,13 @@
 package com.genxsolutions.myapplication.ui.screens.preview
 
 import android.graphics.BitmapFactory
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
+import com.genxsolutions.myapplication.ui.screens.preview.filters.CropImageHandler
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.BorderStroke
@@ -40,6 +47,26 @@ fun PreviewScreen(
     onBack: () -> Unit,
     onDone: () -> Unit,
 ) {
+    val context = LocalContext.current
+    var refreshKey by remember { mutableIntStateOf(0) }
+
+    val cropLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        val targetFile = files.getOrNull(currentIndex)
+        if (targetFile != null) {
+            val success = CropImageHandler.handleCropResult(
+                context = context,
+                resultCode = result.resultCode,
+                data = result.data,
+                targetFile = targetFile
+            )
+            if (success) {
+                refreshKey++
+            }
+        }
+    }
+
     Surface(color = Color.White) {
         Column(
             modifier = Modifier
@@ -80,7 +107,7 @@ fun PreviewScreen(
                 contentAlignment = Alignment.Center
             ) {
                 val file = files.getOrNull(currentIndex)
-                val bitmap = remember(file?.path) {
+                val bitmap = remember(file?.path, refreshKey) {
                     file?.takeIf { it.exists() }?.let { f ->
                         BitmapFactory.decodeFile(f.absolutePath)?.asImageBitmap()
                     }
@@ -180,7 +207,10 @@ fun PreviewScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                ToolItem(icon = Icons.Outlined.Crop, label = "Crop")
+                ToolItem(icon = Icons.Outlined.Crop, label = "Crop") {
+                    val file = files.getOrNull(currentIndex) ?: return@ToolItem
+                    CropImageHandler.launchCrop(context, file, cropLauncher)
+                }
                 ToolItem(icon = Icons.Outlined.Draw, label = "Draw")
                 ToolItem(icon = Icons.Outlined.FilterAlt, label = "Filter")
 
@@ -197,14 +227,18 @@ fun PreviewScreen(
 }
 
 @Composable
-private fun ToolItem(icon: androidx.compose.ui.graphics.vector.ImageVector, label: String) {
+private fun ToolItem(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    label: String,
+    onClick: (() -> Unit)? = null
+) {
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center,
         modifier = Modifier
             .wrapContentSize()
             .clip(RoundedCornerShape(12.dp))
-            .clickable { /* TODO */ }
+            .clickable { onClick?.invoke() }
             .padding(4.dp)
     ) {
         Icon(icon, contentDescription = label, tint = PrimaryPurple)
