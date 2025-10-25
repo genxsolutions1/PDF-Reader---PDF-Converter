@@ -38,6 +38,7 @@ import androidx.compose.ui.unit.sp
 import com.genxsolutions.myapplication.ui.theme.HeaderIconBackground
 import com.genxsolutions.myapplication.ui.theme.PrimaryPurple
 import java.io.File
+import com.genxsolutions.myapplication.ui.screens.convert.ConvertToPdfScreen
 
 @Composable
 fun PreviewScreen(
@@ -52,6 +53,7 @@ fun PreviewScreen(
     var refreshKey by remember { mutableIntStateOf(0) }
     var isDrawing by remember { mutableStateOf(false) }
     var isFiltering by remember { mutableStateOf(false) }
+    var showConvertScreen by remember { mutableStateOf(false) }
 
     val cropLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -68,6 +70,19 @@ fun PreviewScreen(
                 refreshKey++
             }
         }
+    }
+
+    if (showConvertScreen) {
+        ConvertToPdfScreen(
+            files = files,
+            onBack = { showConvertScreen = false },
+            onConvert = {
+                // TODO: Implement PDF conversion
+                showConvertScreen = false
+                onDone()
+            }
+        )
+        return
     }
 
     if (isDrawing) {
@@ -258,7 +273,7 @@ fun PreviewScreen(
                 }
 
                 Button(
-                    onClick = onDone,
+                    onClick = { showConvertScreen = true },
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryPurple),
                     shape = RoundedCornerShape(24.dp)
                 ) {
