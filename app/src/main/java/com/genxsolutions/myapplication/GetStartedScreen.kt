@@ -16,6 +16,10 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.genxsolutions.myapplication.ui.theme.BackgroundGradientEnd
+import com.genxsolutions.myapplication.ui.theme.BackgroundGradientStart
+import com.genxsolutions.myapplication.ui.theme.LightBlue
+import com.genxsolutions.myapplication.ui.theme.PrimaryPurple
 
 @Composable
 fun GetStartedScreen(onGetStartedClick: () -> Unit) {
@@ -25,8 +29,8 @@ fun GetStartedScreen(onGetStartedClick: () -> Unit) {
             .background(
                 Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFFF5F9FF),
-                        Color(0xFFFFFFFF)
+                        BackgroundGradientStart,
+                        BackgroundGradientEnd
                     )
                 )
             )
@@ -37,7 +41,7 @@ fun GetStartedScreen(onGetStartedClick: () -> Unit) {
                 .size(200.dp)
                 .offset(x = 250.dp, y = 100.dp)
                 .background(
-                    Color(0xFFE8F0FF),
+                    LightBlue,
                     shape = RoundedCornerShape(100.dp)
                 )
         )
@@ -47,7 +51,7 @@ fun GetStartedScreen(onGetStartedClick: () -> Unit) {
                 .size(150.dp)
                 .offset(x = 280.dp, y = 200.dp)
                 .background(
-                    Color(0xFFE8F0FF),
+                    LightBlue,
                     shape = RoundedCornerShape(75.dp)
                 )
         )
@@ -57,7 +61,7 @@ fun GetStartedScreen(onGetStartedClick: () -> Unit) {
                 .size(100.dp)
                 .offset(x = (-20).dp, y = 600.dp)
                 .background(
-                    Color(0xFFE8F0FF),
+                    LightBlue,
                     shape = RoundedCornerShape(50.dp)
                 )
         )
@@ -67,7 +71,7 @@ fun GetStartedScreen(onGetStartedClick: () -> Unit) {
                 .size(120.dp)
                 .offset(x = 50.dp, y = 700.dp)
                 .background(
-                    Color(0xFFE8F0FF),
+                    LightBlue,
                     shape = RoundedCornerShape(60.dp)
                 )
         )
@@ -85,7 +89,7 @@ fun GetStartedScreen(onGetStartedClick: () -> Unit) {
                 modifier = Modifier
                     .size(120.dp)
                     .background(
-                        Color(0xFF8B5CF6),
+                        PrimaryPurple,
                         shape = RoundedCornerShape(24.dp)
                     ),
                 contentAlignment = Alignment.Center
@@ -175,7 +179,7 @@ fun GetStartedScreen(onGetStartedClick: () -> Unit) {
                     .fillMaxWidth()
                     .height(64.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFF8B5CF6)
+                    containerColor = PrimaryPurple
                 ),
                 shape = RoundedCornerShape(32.dp)
             ) {
