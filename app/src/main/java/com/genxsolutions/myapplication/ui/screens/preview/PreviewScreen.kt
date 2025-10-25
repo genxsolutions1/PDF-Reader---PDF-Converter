@@ -48,6 +48,7 @@ fun PreviewScreen(
     onNext: () -> Unit,
     onBack: () -> Unit,
     onDone: () -> Unit,
+    onRemoveFile: (File) -> Unit,
 ) {
     val context = LocalContext.current
     var refreshKey by remember { mutableIntStateOf(0) }
@@ -80,7 +81,8 @@ fun PreviewScreen(
                 // TODO: Implement PDF conversion
                 showConvertScreen = false
                 onDone()
-            }
+            },
+            onRemoveFile = { file -> onRemoveFile(file) }
         )
         return
     }

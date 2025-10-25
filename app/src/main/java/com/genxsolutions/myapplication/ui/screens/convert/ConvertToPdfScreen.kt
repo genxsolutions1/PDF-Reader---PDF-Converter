@@ -11,8 +11,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.*
+import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -31,8 +31,11 @@ import java.util.*
 fun ConvertToPdfScreen(
     files: List<File>,
     onBack: () -> Unit,
-    onConvert: () -> Unit
+    onConvert: () -> Unit,
+    onRemoveFile: (File) -> Unit
 ) {
+    // Maintain a mutable list so items can be removed from the conversion batch
+    val items: SnapshotStateList<File> = remember(files) { files.toMutableStateList() }
     Surface(color = Color.White) {
         Column(
             modifier = Modifier
@@ -89,8 +92,15 @@ fun ConvertToPdfScreen(
                     .padding(horizontal = 16.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                itemsIndexed(files) { index, file ->
-                    ImageFileItem(file = file, index = index + 1)
+                itemsIndexed(items, key = { _, f -> f.absolutePath.hashCode() }) { index, file ->
+                    ImageFileItem(
+                        file = file,
+                        index = index + 1,
+                        onDelete = {
+                            items.remove(file)
+                            onRemoveFile(file)
+                        }
+                    )
                 }
             }
 
@@ -115,7 +125,8 @@ fun ConvertToPdfScreen(
 @Composable
 private fun ImageFileItem(
     file: File,
-    index: Int
+    index: Int,
+    onDelete: () -> Unit
 ) {
     val bitmap = remember(file.path) {
         try {
@@ -204,13 +215,28 @@ private fun ImageFileItem(
             }
         }
 
-        // Three-dot menu
-        IconButton(onClick = { /* TODO: Add menu */ }) {
-            Icon(
-                imageVector = Icons.Outlined.MoreVert,
-                contentDescription = "Options",
-                tint = Color.Gray
-            )
+        // Three-dot menu with dropdown
+        var expanded by remember { mutableStateOf(false) }
+        Box {
+            IconButton(onClick = { expanded = true }) {
+                Icon(
+                    imageVector = Icons.Outlined.MoreVert,
+                    contentDescription = "Options",
+                    tint = Color.Gray
+                )
+            }
+            DropdownMenu(
+                expanded = expanded,
+                onDismissRequest = { expanded = false }
+            ) {
+                DropdownMenuItem(
+                    text = { Text("Delete") },
+                    onClick = {
+                        expanded = false
+                        onDelete()
+                    }
+                )
+            }
         }
     }
 }

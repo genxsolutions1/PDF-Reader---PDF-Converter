@@ -81,7 +81,16 @@ fun HomeScreen() {
             onPrev = { if (currentIndex > 0) currentIndex-- },
             onNext = { if (currentIndex < files.lastIndex) currentIndex++ },
             onBack = { previewFiles = null },
-            onDone = { previewFiles = null }
+            onDone = { previewFiles = null },
+            onRemoveFile = { file ->
+                val newList = files.toMutableList().also { it.remove(file) }
+                if (newList.isEmpty()) {
+                    previewFiles = null
+                } else {
+                    previewFiles = newList
+                    if (currentIndex > newList.lastIndex) currentIndex = newList.lastIndex
+                }
+            }
         )
     } else {
         Scaffold(
