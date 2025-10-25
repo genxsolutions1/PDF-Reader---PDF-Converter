@@ -24,6 +24,7 @@ import androidx.compose.material.icons.outlined.Draw
 import androidx.compose.material.icons.outlined.FilterAlt
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -49,6 +50,7 @@ fun PreviewScreen(
 ) {
     val context = LocalContext.current
     var refreshKey by remember { mutableIntStateOf(0) }
+    var isDrawing by remember { mutableStateOf(false) }
 
     val cropLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -65,6 +67,24 @@ fun PreviewScreen(
                 refreshKey++
             }
         }
+    }
+
+    if (isDrawing) {
+        val file = files.getOrNull(currentIndex)
+        if (file != null) {
+            com.genxsolutions.myapplication.ui.screens.preview.filters.DrawImageScreen(
+                file = file,
+                onBack = { isDrawing = false },
+                onSaved = { success ->
+                    isDrawing = false
+                    if (success) refreshKey++
+                }
+            )
+        } else {
+            // fallback if file missing
+            isDrawing = false
+        }
+        return
     }
 
     Surface(color = Color.White) {
@@ -211,7 +231,9 @@ fun PreviewScreen(
                     val file = files.getOrNull(currentIndex) ?: return@ToolItem
                     CropImageHandler.launchCrop(context, file, cropLauncher)
                 }
-                ToolItem(icon = Icons.Outlined.Draw, label = "Draw")
+                ToolItem(icon = Icons.Outlined.Draw, label = "Draw") {
+                    isDrawing = true
+                }
                 ToolItem(icon = Icons.Outlined.FilterAlt, label = "Filter")
 
                 Button(
