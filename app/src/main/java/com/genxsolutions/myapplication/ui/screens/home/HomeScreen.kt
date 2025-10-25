@@ -33,7 +33,9 @@ import androidx.compose.ui.zIndex
 import com.genxsolutions.myapplication.ui.theme.HeaderIconBackground
 import com.genxsolutions.myapplication.ui.theme.PrimaryPurple
 import com.genxsolutions.myapplication.utils.ImageImportManager
+import com.genxsolutions.myapplication.ui.screens.preview.PreviewScreen
 import kotlinx.coroutines.launch
+import java.io.File
 
 @Composable
 @Preview(showBackground = true, showSystemUi = true)
@@ -43,6 +45,8 @@ fun HomeScreen() {
     val scope = rememberCoroutineScope()
 
     var pendingUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
+    var previewFiles by remember { mutableStateOf<List<File>?>(null) }
+    var currentIndex by remember { mutableStateOf(0) }
 
     val pickImagesLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = 20)
@@ -51,50 +55,66 @@ fun HomeScreen() {
             pendingUris = uris
             scope.launch {
                 val result = ImageImportManager.importImages(context, uris)
-                val msg = buildString {
-                    append("Imported ")
-                    append(result.savedFiles.size)
-                    append(" image(s)")
-                    if (result.failures.isNotEmpty()) {
-                        append(" • Failed: ")
-                        append(result.failures.size)
+                if (result.savedFiles.isNotEmpty()) {
+                    previewFiles = result.savedFiles
+                    currentIndex = 0
+                } else {
+                    val msg = buildString {
+                        append("No images imported")
+                        if (result.failures.isNotEmpty()) {
+                            append(" • Failed: ")
+                            append(result.failures.size)
+                        }
                     }
+                    snackbarHostState.showSnackbar(msg)
                 }
-                snackbarHostState.showSnackbar(msg)
             }
         }
     }
 
-    Scaffold(
-        modifier = Modifier.fillMaxSize(),
-        topBar = { HomeHeader() },
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = {
-                    pickImagesLauncher.launch(
-                        PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+    // If we have files, show preview screen full-screen
+    val files = previewFiles
+    if (files != null) {
+        PreviewScreen(
+            files = files,
+            currentIndex = currentIndex,
+            onPrev = { if (currentIndex > 0) currentIndex-- },
+            onNext = { if (currentIndex < files.lastIndex) currentIndex++ },
+            onBack = { previewFiles = null },
+            onDone = { previewFiles = null }
+        )
+    } else {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            topBar = { HomeHeader() },
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            floatingActionButton = {
+                FloatingActionButton(
+                    onClick = {
+                        pickImagesLauncher.launch(
+                            PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
+                        )
+                    },
+                    containerColor = PrimaryPurple,
+                    contentColor = Color.White,
+                    elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Add,
+                        contentDescription = "Add",
+                        modifier = Modifier.size(28.dp)
                     )
-                },
-                containerColor = PrimaryPurple,
-                contentColor = Color.White,
-                elevation = FloatingActionButtonDefaults.elevation(defaultElevation = 6.dp)
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Add,
-                    contentDescription = "Add",
-                    modifier = Modifier.size(28.dp)
-                )
-            }
-        },
-        floatingActionButtonPosition = FabPosition.End
-    ) { innerPadding ->
-        // Content intentionally left minimal as per request
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding)
-        ) {}
+                }
+            },
+            floatingActionButtonPosition = FabPosition.End
+        ) { innerPadding ->
+            // Content intentionally left minimal as per request
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding)
+            ) {}
+        }
     }
 }
 
