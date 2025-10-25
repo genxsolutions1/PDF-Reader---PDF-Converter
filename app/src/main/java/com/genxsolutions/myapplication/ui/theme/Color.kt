@@ -15,3 +15,7 @@ val PrimaryPurple = Color(0xFF8B5CF6)
 val LightBlue = Color(0xFFE8F0FF)
 val BackgroundGradientStart = Color(0xFFF5F9FF)
 val BackgroundGradientEnd = Color(0xFFFFFFFF)
+// Surfaces and tints
+val BottomBarBackground = Color(0xFFF3E8FF)
+val BottomBarSelectedBg = Color(0xFFE9D7FF)
+val HeaderIconBackground = Color(0xFFEDE7FF)
