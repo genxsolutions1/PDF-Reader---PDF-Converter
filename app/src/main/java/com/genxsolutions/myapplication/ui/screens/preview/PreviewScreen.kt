@@ -1,6 +1,7 @@
 package com.genxsolutions.myapplication.ui.screens.preview
 
 import android.graphics.BitmapFactory
+import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.mutableIntStateOf
@@ -39,6 +40,15 @@ import com.genxsolutions.myapplication.ui.theme.HeaderIconBackground
 import com.genxsolutions.myapplication.ui.theme.PrimaryPurple
 import java.io.File
 import com.genxsolutions.myapplication.ui.screens.convert.ConvertToPdfScreen
+import com.genxsolutions.myapplication.utils.PdfConverter
+import com.genxsolutions.myapplication.utils.PdfHelper
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
+import androidx.compose.runtime.remember
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 @Composable
 fun PreviewScreen(
@@ -55,6 +65,10 @@ fun PreviewScreen(
     var isDrawing by remember { mutableStateOf(false) }
     var isFiltering by remember { mutableStateOf(false) }
     var showConvertScreen by remember { mutableStateOf(false) }
+    var pendingConvertList by remember { mutableStateOf<List<File>?>(null) }
+    var isConverting by remember { mutableStateOf(false) }
+    var generatedPdfFile by remember { mutableStateOf<File?>(null) }
+    var showSuccessDialog by remember { mutableStateOf(false) }
 
     val cropLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -73,17 +87,116 @@ fun PreviewScreen(
         }
     }
 
-    if (showConvertScreen) {
-        ConvertToPdfScreen(
-            files = files,
-            onBack = { showConvertScreen = false },
-            onConvert = {
-                // TODO: Implement PDF conversion
-                showConvertScreen = false
-                onDone()
+    // Success dialog after PDF generation
+    if (showSuccessDialog && generatedPdfFile != null) {
+        AlertDialog(
+            onDismissRequest = { },
+            title = { Text("PDF Created Successfully") },
+            text = { Text("Your PDF has been generated. Choose an action:") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        val saved = PdfHelper.savePdfToDownloads(context, generatedPdfFile!!)
+                        if (saved) {
+                            Toast.makeText(context, "PDF saved successfully", Toast.LENGTH_SHORT).show()
+                        } else {
+                            Toast.makeText(context, "Failed to save PDF", Toast.LENGTH_SHORT).show()
+                        }
+                        showSuccessDialog = false
+                        generatedPdfFile = null
+                        onDone()
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryPurple)
+                ) {
+                    Text("Save")
+                }
             },
-            onRemoveFile = { file -> onRemoveFile(file) }
+            dismissButton = {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    TextButton(onClick = {
+                        try {
+                            PdfHelper.sharePdf(context, generatedPdfFile!!)
+                            showSuccessDialog = false
+                            generatedPdfFile = null
+                            onDone()
+                        } catch (e: Exception) {
+                            e.printStackTrace()
+                            Toast.makeText(context, "Failed to share PDF: ${e.message}", Toast.LENGTH_LONG).show()
+                        }
+                    }) {
+                        Text("Share")
+                    }
+                    TextButton(onClick = {
+                        showSuccessDialog = false
+                        generatedPdfFile = null
+                        onDone()
+                    }) {
+                        Text("Close")
+                    }
+                }
+            }
         )
+    }
+
+    if (showConvertScreen) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            ConvertToPdfScreen(
+                files = files,
+                onBack = { showConvertScreen = false },
+                onConvert = { list -> 
+                    pendingConvertList = list
+                    isConverting = true
+                },
+                onRemoveFile = { file -> onRemoveFile(file) },
+                isLoading = isConverting
+            )
+            val toConvert = pendingConvertList
+            if (toConvert != null) {
+                LaunchedEffect(toConvert) {
+                    val pdfFile = withContext(Dispatchers.IO) {
+                        PdfConverter.createPdfFromImages(context, toConvert)
+                    }
+                    isConverting = false
+                    pendingConvertList = null
+                    showConvertScreen = false
+                    if (pdfFile != null) {
+                        generatedPdfFile = pdfFile
+                        showSuccessDialog = true
+                    } else {
+                        onDone()
+                    }
+                }
+            }
+            
+            // Full-screen loading overlay for PDF conversion
+            if (isConverting) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.7f))
+                        .systemBarsPadding(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        CircularProgressIndicator(
+                            color = PrimaryPurple,
+                            modifier = Modifier.size(60.dp),
+                            strokeWidth = 6.dp
+                        )
+                        Spacer(Modifier.height(24.dp))
+                        Text(
+                            text = "Creating PDF...",
+                            color = Color.White,
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+            }
+        }
         return
     }
 
@@ -123,163 +236,165 @@ fun PreviewScreen(
         return
     }
 
-    Surface(color = Color.White) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .systemBarsPadding()
-        ) {
-            // Top bar
-            Row(
+    Box(modifier = Modifier.fillMaxSize()) {
+        Surface(color = Color.White) {
+            Column(
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                    .fillMaxSize()
+                    .systemBarsPadding()
             ) {
-                IconButton(onClick = onBack) {
-                    Icon(
-                        imageVector = Icons.Outlined.ArrowBack,
-                        contentDescription = "Back",
-                        tint = PrimaryPurple
-                    )
-                }
-                Text(
-                    text = "Preview",
-                    fontSize = 28.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.Black
-                )
-                Spacer(Modifier.size(48.dp)) // balance spacing
-            }
-
-            Spacer(Modifier.height(8.dp))
-
-            // Image area
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .weight(1f),
-                contentAlignment = Alignment.Center
-            ) {
-                val file = files.getOrNull(currentIndex)
-                val bitmap = remember(file?.path, refreshKey) {
-                    file?.takeIf { it.exists() }?.let { f ->
-                        BitmapFactory.decodeFile(f.absolutePath)?.asImageBitmap()
-                    }
-                }
-                if (bitmap != null) {
-                    Surface(
-                        shape = RoundedCornerShape(28.dp),
-                        shadowElevation = 2.dp,
-                        color = Color.White
-                    ) {
-                        Image(
-                            bitmap = bitmap,
-                            contentDescription = null,
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(16.dp)
-                                .clip(RoundedCornerShape(28.dp)),
-                            contentScale = ContentScale.Crop
+                // Top bar
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    IconButton(onClick = onBack) {
+                        Icon(
+                            imageVector = Icons.Outlined.ArrowBack,
+                            contentDescription = "Back",
+                            tint = PrimaryPurple
                         )
                     }
-                } else {
-                    Text("No image", color = Color.Gray)
-                }
-            }
-
-            // Pagination controls
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 24.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                IconButton(
-                    onClick = onPrev,
-                    enabled = currentIndex > 0
-                ) {
-                    Surface(
-                        shape = CircleShape,
-                        color = Color.White,
-                        shadowElevation = 2.dp,
-                        border = BorderStroke(1.dp, PrimaryPurple.copy(alpha = 0.25f))
-                    ) {
-                        Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Outlined.ChevronLeft,
-                                contentDescription = "Previous",
-                                tint = PrimaryPurple
-                            )
-                        }
-                    }
-                }
-
-                Surface(
-                    shape = RoundedCornerShape(20.dp),
-                    shadowElevation = 0.dp,
-                    color = Color.White,
-                    border = BorderStroke(1.dp, PrimaryPurple.copy(alpha = 0.25f))
-                ) {
                     Text(
-                        text = "Page ${currentIndex + 1}/${files.size}",
-                        modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
-                        fontSize = 18.sp,
+                        text = "Preview",
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
                         color = Color.Black
                     )
+                    Spacer(Modifier.size(48.dp)) // balance spacing
                 }
 
-                IconButton(
-                    onClick = onNext,
-                    enabled = currentIndex < files.lastIndex
+                Spacer(Modifier.height(8.dp))
+
+                // Image area
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .weight(1f),
+                    contentAlignment = Alignment.Center
                 ) {
+                    val file = files.getOrNull(currentIndex)
+                    val bitmap = remember(file?.path, refreshKey) {
+                        file?.takeIf { it.exists() }?.let { f ->
+                            BitmapFactory.decodeFile(f.absolutePath)?.asImageBitmap()
+                        }
+                    }
+                    if (bitmap != null) {
+                        Surface(
+                            shape = RoundedCornerShape(28.dp),
+                            shadowElevation = 2.dp,
+                            color = Color.White
+                        ) {
+                            Image(
+                                bitmap = bitmap,
+                                contentDescription = null,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(16.dp)
+                                    .clip(RoundedCornerShape(28.dp)),
+                                contentScale = ContentScale.Crop
+                            )
+                        }
+                    } else {
+                        Text("No image", color = Color.Gray)
+                    }
+                }
+
+                // Pagination controls
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 24.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
+                ) {
+                    IconButton(
+                        onClick = onPrev,
+                        enabled = currentIndex > 0
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color.White,
+                            shadowElevation = 2.dp,
+                            border = BorderStroke(1.dp, PrimaryPurple.copy(alpha = 0.25f))
+                        ) {
+                            Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Outlined.ChevronLeft,
+                                    contentDescription = "Previous",
+                                    tint = PrimaryPurple
+                                )
+                            }
+                        }
+                    }
+
                     Surface(
-                        shape = CircleShape,
+                        shape = RoundedCornerShape(20.dp),
+                        shadowElevation = 0.dp,
                         color = Color.White,
-                        shadowElevation = 2.dp,
                         border = BorderStroke(1.dp, PrimaryPurple.copy(alpha = 0.25f))
                     ) {
-                        Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) {
-                            Icon(
-                                imageVector = Icons.Outlined.ChevronRight,
-                                contentDescription = "Next",
-                                tint = PrimaryPurple
-                            )
+                        Text(
+                            text = "Page ${currentIndex + 1}/${files.size}",
+                            modifier = Modifier.padding(horizontal = 18.dp, vertical = 10.dp),
+                            fontSize = 18.sp,
+                            color = Color.Black
+                        )
+                    }
+
+                    IconButton(
+                        onClick = onNext,
+                        enabled = currentIndex < files.lastIndex
+                    ) {
+                        Surface(
+                            shape = CircleShape,
+                            color = Color.White,
+                            shadowElevation = 2.dp,
+                            border = BorderStroke(1.dp, PrimaryPurple.copy(alpha = 0.25f))
+                        ) {
+                            Box(Modifier.size(44.dp), contentAlignment = Alignment.Center) {
+                                Icon(
+                                    imageVector = Icons.Outlined.ChevronRight,
+                                    contentDescription = "Next",
+                                    tint = PrimaryPurple
+                                )
+                            }
                         }
                     }
                 }
-            }
 
-            Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(12.dp))
 
-            // Bottom tools row
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(HeaderIconBackground)
-                    .padding(horizontal = 20.dp, vertical = 16.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                ToolItem(icon = Icons.Outlined.Crop, label = "Crop") {
-                    val file = files.getOrNull(currentIndex) ?: return@ToolItem
-                    CropImageHandler.launchCrop(context, file, cropLauncher)
-                }
-                ToolItem(icon = Icons.Outlined.Draw, label = "Draw") {
-                    isDrawing = true
-                }
-                ToolItem(icon = Icons.Outlined.FilterAlt, label = "Filter") {
-                    isFiltering = true
-                }
-
-                Button(
-                    onClick = { showConvertScreen = true },
-                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryPurple),
-                    shape = RoundedCornerShape(24.dp)
+                // Bottom tools row
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(HeaderIconBackground)
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    Text("Done")
+                    ToolItem(icon = Icons.Outlined.Crop, label = "Crop") {
+                        val file = files.getOrNull(currentIndex) ?: return@ToolItem
+                        CropImageHandler.launchCrop(context, file, cropLauncher)
+                    }
+                    ToolItem(icon = Icons.Outlined.Draw, label = "Draw") {
+                        isDrawing = true
+                    }
+                    ToolItem(icon = Icons.Outlined.FilterAlt, label = "Filter") {
+                        isFiltering = true
+                    }
+
+                    Button(
+                        onClick = { showConvertScreen = true },
+                        colors = ButtonDefaults.buttonColors(containerColor = PrimaryPurple),
+                        shape = RoundedCornerShape(24.dp)
+                    ) {
+                        Text("Done")
+                    }
                 }
             }
         }

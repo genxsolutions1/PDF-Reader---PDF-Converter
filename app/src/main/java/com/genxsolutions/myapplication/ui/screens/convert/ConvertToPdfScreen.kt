@@ -12,6 +12,7 @@ import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.toMutableStateList
 import androidx.compose.runtime.snapshots.SnapshotStateList
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -31,8 +32,9 @@ import java.util.*
 fun ConvertToPdfScreen(
     files: List<File>,
     onBack: () -> Unit,
-    onConvert: () -> Unit,
-    onRemoveFile: (File) -> Unit
+    onConvert: (List<File>) -> Unit,
+    onRemoveFile: (File) -> Unit,
+    isLoading: Boolean = false
 ) {
     // Maintain a mutable list so items can be removed from the conversion batch
     val items: SnapshotStateList<File> = remember(files) { files.toMutableStateList() }
@@ -107,14 +109,19 @@ fun ConvertToPdfScreen(
             Spacer(Modifier.height(16.dp))
 
             // Convert button
+            val canConvert = items.isNotEmpty()
             Button(
-                onClick = onConvert,
+                onClick = { onConvert(items.toList()) },
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 32.dp, vertical = 16.dp)
                     .height(56.dp),
                 shape = RoundedCornerShape(28.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryPurple)
+                enabled = canConvert && !isLoading,
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = PrimaryPurple,
+                    disabledContainerColor = PrimaryPurple.copy(alpha = 0.4f)
+                )
             ) {
                 Text("Convert", fontSize = 18.sp, fontWeight = FontWeight.Bold)
             }
