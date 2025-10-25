@@ -1,4 +1,4 @@
-package com.genxsolutions.myapplication
+package com.genxsolutions.myapplication.utils
 
 import android.content.Context
 import android.content.SharedPreferences

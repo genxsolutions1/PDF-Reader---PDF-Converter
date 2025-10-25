@@ -1,4 +1,4 @@
-package com.genxsolutions.myapplication
+package com.genxsolutions.myapplication.ui.screens.home
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.MaterialTheme

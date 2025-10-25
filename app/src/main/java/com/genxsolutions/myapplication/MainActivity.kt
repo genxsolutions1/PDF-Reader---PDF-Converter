@@ -9,7 +9,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import com.genxsolutions.myapplication.ui.screens.getstarted.GetStartedScreen
+import com.genxsolutions.myapplication.ui.screens.home.HomeScreen
 import com.genxsolutions.myapplication.ui.theme.PDFConverterPDFReaderTheme
+import com.genxsolutions.myapplication.utils.PreferencesManager
 
 class MainActivity : ComponentActivity() {
     private lateinit var preferencesManager: PreferencesManager
