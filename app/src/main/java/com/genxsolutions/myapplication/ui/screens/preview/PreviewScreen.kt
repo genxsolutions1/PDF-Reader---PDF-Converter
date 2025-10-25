@@ -51,6 +51,7 @@ fun PreviewScreen(
     val context = LocalContext.current
     var refreshKey by remember { mutableIntStateOf(0) }
     var isDrawing by remember { mutableStateOf(false) }
+    var isFiltering by remember { mutableStateOf(false) }
 
     val cropLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -83,6 +84,24 @@ fun PreviewScreen(
         } else {
             // fallback if file missing
             isDrawing = false
+        }
+        return
+    }
+
+    if (isFiltering) {
+        val file = files.getOrNull(currentIndex)
+        if (file != null) {
+            com.genxsolutions.myapplication.ui.screens.preview.filters.FilterImageScreen(
+                file = file,
+                onBack = { isFiltering = false },
+                onSaved = { success ->
+                    isFiltering = false
+                    if (success) refreshKey++
+                }
+            )
+        } else {
+            // fallback if file missing
+            isFiltering = false
         }
         return
     }
@@ -234,7 +253,9 @@ fun PreviewScreen(
                 ToolItem(icon = Icons.Outlined.Draw, label = "Draw") {
                     isDrawing = true
                 }
-                ToolItem(icon = Icons.Outlined.FilterAlt, label = "Filter")
+                ToolItem(icon = Icons.Outlined.FilterAlt, label = "Filter") {
+                    isFiltering = true
+                }
 
                 Button(
                     onClick = onDone,
