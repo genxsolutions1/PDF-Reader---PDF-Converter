@@ -7,14 +7,19 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Apps
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Menu
+import androidx.compose.material.icons.outlined.PictureAsPdf
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Share
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -33,6 +38,8 @@ import androidx.compose.ui.zIndex
 import com.genxsolutions.myapplication.ui.theme.HeaderIconBackground
 import com.genxsolutions.myapplication.ui.theme.PrimaryPurple
 import com.genxsolutions.myapplication.utils.ImageImportManager
+import com.genxsolutions.myapplication.utils.RecentPdfManager
+import com.genxsolutions.myapplication.utils.PdfHelper
 import com.genxsolutions.myapplication.ui.screens.preview.PreviewScreen
 import kotlinx.coroutines.launch
 import java.io.File
@@ -47,6 +54,13 @@ fun HomeScreen() {
     var pendingUris by remember { mutableStateOf<List<Uri>>(emptyList()) }
     var previewFiles by remember { mutableStateOf<List<File>?>(null) }
     var currentIndex by remember { mutableStateOf(0) }
+    var recentPdfs by remember { mutableStateOf<List<File>>(emptyList()) }
+    var refreshKey by remember { mutableStateOf(0) }
+
+    // Load recent PDFs
+    LaunchedEffect(refreshKey) {
+        recentPdfs = RecentPdfManager.getRecentPdfs(context)
+    }
 
     val pickImagesLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.PickMultipleVisualMedia(maxItems = 20)
@@ -81,7 +95,10 @@ fun HomeScreen() {
             onPrev = { if (currentIndex > 0) currentIndex-- },
             onNext = { if (currentIndex < files.lastIndex) currentIndex++ },
             onBack = { previewFiles = null },
-            onDone = { previewFiles = null },
+            onDone = { 
+                previewFiles = null
+                refreshKey++ // Refresh recent PDFs list
+            },
             onRemoveFile = { file ->
                 val newList = files.toMutableList().also { it.remove(file) }
                 if (newList.isEmpty()) {
@@ -117,12 +134,184 @@ fun HomeScreen() {
             },
             floatingActionButtonPosition = FabPosition.End
         ) { innerPadding ->
-            // Content intentionally left minimal as per request
+            // Recent PDFs List
+            if (recentPdfs.isEmpty()) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.Center
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.PictureAsPdf,
+                            contentDescription = null,
+                            modifier = Modifier.size(80.dp),
+                            tint = Color.Gray.copy(alpha = 0.4f)
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        Text(
+                            text = "No PDFs yet",
+                            fontSize = 18.sp,
+                            fontWeight = FontWeight.Medium,
+                            color = Color.Gray
+                        )
+                        Spacer(Modifier.height(8.dp))
+                        Text(
+                            text = "Create your first PDF by importing images",
+                            fontSize = 14.sp,
+                            color = Color.Gray
+                        )
+                    }
+                }
+            } else {
+                LazyColumn(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(innerPadding),
+                    contentPadding = PaddingValues(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    item {
+                        Text(
+                            text = "Recent PDFs",
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.Black,
+                            modifier = Modifier.padding(bottom = 8.dp)
+                        )
+                    }
+                    items(recentPdfs, key = { it.absolutePath }) { pdfFile ->
+                        PdfItem(
+                            file = pdfFile,
+                            onShare = {
+                                try {
+                                    PdfHelper.sharePdf(context, pdfFile)
+                                } catch (e: Exception) {
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar("Failed to share PDF")
+                                    }
+                                }
+                            },
+                            onDelete = {
+                                if (pdfFile.delete()) {
+                                    refreshKey++
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar("PDF deleted")
+                                    }
+                                } else {
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar("Failed to delete PDF")
+                                    }
+                                }
+                            }
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun PdfItem(
+    file: File,
+    onShare: () -> Unit,
+    onDelete: () -> Unit
+) {
+    var showDeleteDialog by remember { mutableStateOf(false) }
+    
+    if (showDeleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showDeleteDialog = false },
+            title = { Text("Delete PDF") },
+            text = { Text("Are you sure you want to delete ${file.name}?") },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onDelete()
+                        showDeleteDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = Color.Red)
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+    
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(12.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            // PDF Icon
             Box(
                 modifier = Modifier
-                    .fillMaxSize()
-                    .padding(innerPadding)
-            ) {}
+                    .size(48.dp)
+                    .clip(RoundedCornerShape(8.dp))
+                    .background(PrimaryPurple.copy(alpha = 0.1f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.PictureAsPdf,
+                    contentDescription = null,
+                    tint = PrimaryPurple,
+                    modifier = Modifier.size(28.dp)
+                )
+            }
+            
+            // File Name
+            Text(
+                text = file.nameWithoutExtension,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Medium,
+                color = Color.Black,
+                maxLines = 1,
+                modifier = Modifier.weight(1f)
+            )
+            
+            // Share Icon
+            IconButton(
+                onClick = onShare,
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Share,
+                    contentDescription = "Share",
+                    tint = PrimaryPurple,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            
+            // Delete Icon
+            IconButton(
+                onClick = { showDeleteDialog = true },
+                modifier = Modifier.size(40.dp)
+            ) {
+                Icon(
+                    imageVector = Icons.Outlined.Delete,
+                    contentDescription = "Delete",
+                    tint = Color.Red,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
         }
     }
 }
@@ -136,23 +325,8 @@ private fun HomeHeader() {
                 .statusBarsPadding()
                 .padding(horizontal = 16.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.Center
         ) {
-            // Leading squared icon
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(HeaderIconBackground),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Menu,
-                    contentDescription = "Menu",
-                    tint = PrimaryPurple
-                )
-            }
-
             // Title: PDF Reader (PDF in purple)
             Text(
                 text = buildAnnotatedString {
@@ -165,22 +339,6 @@ private fun HomeHeader() {
                 },
                 fontSize = 24.sp
             )
-
-            // Settings square button
-            Box(
-                modifier = Modifier
-                    .size(44.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(HeaderIconBackground)
-                    .clickable { /* TODO: open settings */ },
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = Icons.Outlined.Settings,
-                    contentDescription = "Settings",
-                    tint = PrimaryPurple
-                )
-            }
         }
     }
 }
