@@ -37,6 +37,8 @@ import androidx.compose.foundation.Image
 import androidx.compose.ui.composed
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.sp
 import com.genxsolutions.myapplication.ui.theme.PrimaryPurple
 import java.io.File
 import java.io.FileOutputStream
@@ -193,7 +195,10 @@ fun DrawImageScreen(
                     Color.Cyan,
                     Color.Magenta
                 )
-                Row(verticalAlignment = Alignment.CenterVertically) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.weight(1f, fill = false)
+                ) {
                     colors.forEach { c ->
                         val borderColor = if (c == currentColor) PrimaryPurple else Color.LightGray
                         Box(
@@ -208,12 +213,23 @@ fun DrawImageScreen(
                     }
                 }
 
-                // simple Clear button
-                OutlinedButton(onClick = {
-                    strokes.clear()
-                    activeStroke = null
-                }, shape = RoundedCornerShape(18.dp)) {
-                    Text("Clear")
+                Spacer(Modifier.width(8.dp))
+
+                // Clear button
+                OutlinedButton(
+                    onClick = {
+                        strokes.clear()
+                        activeStroke = null
+                    },
+                    shape = RoundedCornerShape(20.dp),
+                    modifier = Modifier.height(36.dp),
+                    contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp)
+                ) {
+                    Text(
+                        text = "Clear",
+                        maxLines = 1,
+                        fontSize = 14.sp
+                    )
                 }
             }
         }
