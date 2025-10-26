@@ -69,6 +69,8 @@ fun PreviewScreen(
     var isConverting by remember { mutableStateOf(false) }
     var generatedPdfFile by remember { mutableStateOf<File?>(null) }
     var showSuccessDialog by remember { mutableStateOf(false) }
+    var showNameInputDialog by remember { mutableStateOf(false) }
+    var pdfName by remember { mutableStateOf("") }
 
     val cropLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -87,6 +89,70 @@ fun PreviewScreen(
         }
     }
 
+    // Name input dialog for saving PDF
+    if (showNameInputDialog && generatedPdfFile != null) {
+        AlertDialog(
+            onDismissRequest = { },
+            title = { Text("Save PDF") },
+            text = {
+                Column {
+                    Text("Enter name for your PDF:")
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = pdfName,
+                        onValueChange = { pdfName = it },
+                        label = { Text("PDF Name") },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        if (pdfName.isNotBlank()) {
+                            val originalFile = generatedPdfFile!!
+                            val newFileName = "${pdfName.trim()}.pdf"
+                            val newFile = File(originalFile.parent, newFileName)
+                            
+                            if (originalFile.renameTo(newFile)) {
+                                generatedPdfFile = newFile
+                                val saved = PdfHelper.savePdfToDownloads(context, newFile)
+                                if (saved) {
+                                    Toast.makeText(context, "PDF saved successfully", Toast.LENGTH_SHORT).show()
+                                } else {
+                                    Toast.makeText(context, "Failed to save PDF", Toast.LENGTH_SHORT).show()
+                                }
+                            } else {
+                                Toast.makeText(context, "Failed to rename PDF", Toast.LENGTH_SHORT).show()
+                            }
+                            
+                            showNameInputDialog = false
+                            generatedPdfFile = null
+                            pdfName = ""
+                            onDone()
+                        } else {
+                            Toast.makeText(context, "Please enter a name", Toast.LENGTH_SHORT).show()
+                        }
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = PrimaryPurple),
+                    enabled = pdfName.isNotBlank()
+                ) {
+                    Text("Save")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showNameInputDialog = false
+                    showSuccessDialog = true
+                    pdfName = ""
+                }) {
+                    Text("Cancel")
+                }
+            }
+        )
+    }
+
     // Success dialog after PDF generation
     if (showSuccessDialog && generatedPdfFile != null) {
         AlertDialog(
@@ -96,15 +162,12 @@ fun PreviewScreen(
             confirmButton = {
                 Button(
                     onClick = {
-                        val saved = PdfHelper.savePdfToDownloads(context, generatedPdfFile!!)
-                        if (saved) {
-                            Toast.makeText(context, "PDF saved successfully", Toast.LENGTH_SHORT).show()
-                        } else {
-                            Toast.makeText(context, "Failed to save PDF", Toast.LENGTH_SHORT).show()
-                        }
                         showSuccessDialog = false
-                        generatedPdfFile = null
-                        onDone()
+                        showNameInputDialog = true
+                        // Generate default name from current timestamp
+                        val timestamp = java.text.SimpleDateFormat("yyyyMMdd_HHmmss", java.util.Locale.getDefault())
+                            .format(java.util.Date())
+                        pdfName = "PDF_$timestamp"
                     },
                     colors = ButtonDefaults.buttonColors(containerColor = PrimaryPurple)
                 ) {
