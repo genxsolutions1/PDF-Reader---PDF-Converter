@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    
+    <!-- Document shape -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M30,20 L78,20 L78,25 L83,30 L83,85 L30,85 Z"
+        android:strokeColor="#E0E0E0"
+        android:strokeWidth="1" />
+    
+    <!-- PDF text background -->
+    <path
+        android:fillColor="#FF4444"
+        android:pathData="M20,65 L50,65 L50,83 L20,83 Z" />
+    
+    <!-- PDF text -->
+    <group
+        android:translateX="22"
+        android:translateY="70">
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M2,0 L6,0 C7.1,0 8,0.9 8,2 C8,3.1 7.1,4 6,4 L4,4 L4,8 L2,8 Z M4,2 L4,2.5 L6,2.5 C6,2.5 6,2 6,2 Z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M10,0 L14,0 C15.7,0 17,1.3 17,3 C17,4.7 15.7,6 14,6 L12,6 L12,8 L10,8 Z M12,2 L12,4 L14,4 C14.6,4 15,3.6 15,3 C15,2.4 14.6,2 14,2 Z" />
+        <path
+            android:fillColor="#FFFFFF"
+            android:pathData="M19,0 L25,0 L25,2 L21,2 L21,3 L24,3 L24,5 L21,5 L21,8 L19,8 Z" />
+    </group>
+    
+    <!-- Document lines -->
+    <path
+        android:fillColor="#4285F4"
+        android:pathData="M35,30 L75,30 L75,33 L35,33 Z" />
+    <path
+        android:fillColor="#E0E0E0"
+        android:pathData="M35,38 L75,38 L75,39 L35,39 Z" />
+    <path
+        android:fillColor="#E0E0E0"
+        android:pathData="M35,44 L70,44 L70,45 L35,45 Z" />
+    <path
+        android:fillColor="#E0E0E0"
+        android:pathData="M35,50 L75,50 L75,51 L35,51 Z" />
+    
+    <!-- Envelope/Share icon -->
+    <path
+        android:fillColor="#FFA726"
+        android:pathData="M58,35 L80,35 L80,48 L58,48 Z" />
+    <path
+        android:fillColor="#FF9800"
+        android:pathData="M58,35 L69,41 L80,35 L80,38 L69,44 L58,38 Z" />
+    
+    <!-- Share/Network dots as circles using path -->
+    <path
+        android:fillColor="#4285F4"
+        android:pathData="M75,25m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0" />
+    <path
+        android:fillColor="#4285F4"
+        android:pathData="M82,32m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0" />
+    <path
+        android:fillColor="#4285F4"
+        android:pathData="M88,40m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0" />
+    
+    <!-- Connection lines -->
+    <path
+        android:strokeColor="#4285F4"
+        android:strokeWidth="2"
+        android:pathData="M75,25 L82,32 L88,40" />
+    
+    <!-- User avatar circles as paths -->
+    <path
+        android:fillColor="#4285F4"
+        android:pathData="M15,20m-10,0a10,10 0,1 1,20 0a10,10 0,1 1,-20 0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M15,17m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M15,25m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0" />
+    
+    <path
+        android:fillColor="#00BCD4"
+        android:pathData="M8,40m-8,0a8,8 0,1 1,16 0a8,8 0,1 1,-16 0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M8,37m-3,0a3,3 0,1 1,6 0a3,3 0,1 1,-6 0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M8,43m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0" />
+    
+    <path
+        android:fillColor="#E91E63"
+        android:pathData="M20,55m-10,0a10,10 0,1 1,20 0a10,10 0,1 1,-20 0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M20,52m-4,0a4,4 0,1 1,8 0a4,4 0,1 1,-8 0" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M20,60m-5,0a5,5 0,1 1,10 0a5,5 0,1 1,-10 0" />
+</vector>
